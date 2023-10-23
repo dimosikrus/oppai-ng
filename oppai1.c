@@ -133,7 +133,7 @@ OPPAIAPI void ezpp_set_end_time(ezpp_t ez, float end);
 /*
  * these will make a copy of mapfile/data and free it automatically. this
  * is slow but useful when working with bindings in other langs where
- * pointers to strings guaranteed to persist like python3
+ * pointers to strings aren't guaranteed to persist like python3
  */
 OPPAIAPI int ezpp_dup(ezpp_t ez, char* mapfile);
 OPPAIAPI int ezpp_data_dup(ezpp_t ez, char* data, int data_size);
@@ -678,16 +678,16 @@ int mods_apply(ezpp_t ez) {
   }
 
   if (ez->mods & (MODS_DT | MODS_NC)) {
-    ez->speed_mul *= 1.5f;
+    ez->speed_mul *= 1.75f;
   }
   if (ez->mods & MODS_HT) {
-    ez->speed_mul *= 0.75f;
+    ez->speed_mul *= 0.8f;
   }
 
   /* global multipliers */
   od_ar_hp_multiplier = 1;
-  if (ez->mods & MODS_HR) od_ar_hp_multiplier *= 1.4f;
-  if (ez->mods & MODS_EZ) od_ar_hp_multiplier *= 0.5f;
+  if (ez->mods & MODS_HR) od_ar_hp_multiplier *= 1.56f;
+  if (ez->mods & MODS_EZ) od_ar_hp_multiplier *= 0.75f;
 
   ez->od *= od_ar_hp_multiplier;
   ez->odms = od0_ms[ez->mode] - (float)ceil(od_ms_step[ez->mode] * ez->od);
@@ -706,8 +706,8 @@ int mods_apply(ezpp_t ez) {
     : (5 + (AR5_MS - arms) / AR_MS_STEP2);
 
   cs_multiplier = 1;
-  if (ez->mods & MODS_HR) cs_multiplier = 1.3f;
-  if (ez->mods & MODS_EZ) cs_multiplier = 0.5f;
+  if (ez->mods & MODS_HR) cs_multiplier = 1.4f;
+  if (ez->mods & MODS_EZ) cs_multiplier = 0.7f;
   ez->cs *= cs_multiplier;
   ez->cs = al_max(0.0f, al_min(10.0f, ez->cs));
 
@@ -1511,12 +1511,12 @@ float d_spacing_weight(float distance, float delta_time,
       *is_single = distance > SINGLE_SPACING;
       distance = al_min(distance, SINGLE_SPACING);
       delta_time = al_max(delta_time, MAX_SPEED_BONUS);
-      speed_bonus = 1.0f;
+      speed_bonus = 1.1f;
       if (delta_time < MIN_SPEED_BONUS) {
         speed_bonus += (float)
           pow((MIN_SPEED_BONUS - delta_time) / 40.0f, 2);
       }
-      angle_bonus = 1.0f;
+      angle_bonus = 1.2f;
       if (!is_nan(angle) && angle < SPEED_ANGLE_BONUS_BEGIN) {
         float s = (float)sin(1.5 * (SPEED_ANGLE_BONUS_BEGIN - angle));
         angle_bonus += (float)pow(s, 2) / 3.57f;
@@ -2048,8 +2048,8 @@ int pp_std(ezpp_t ez) {
     (ez->nobjects > 2000 ? (float)log10(nobjects_over_2k) * 0.5f : 0.0f)
   );
   float miss_penality = ez->mods & MODS_RX
-    ? (float)pow(0.94f, ez->nmiss + ez->n50 * 0.35f)
-    : (float)pow(0.94f, ez->nmiss);
+    ? (float)pow(0.95f, ez->nmiss + ez->n50 * 0.35f)
+    : (float)pow(0.95f, ez->nmiss);
   float combo_break = (
     (float)pow(ez->combo, 0.8f) / (float)pow(ez->max_combo, 0.8f)
   );
@@ -2096,8 +2096,8 @@ int pp_std(ezpp_t ez) {
   ar_bonus = 1.0f;
 
   if (ez->mods & MODS_RX) {
-    if (ez->ar > 10.67f) {
-      ar_bonus += pow(ez->ar - 10.67f, 1.75f);
+    if (ez->ar > 10.68f) {
+      ar_bonus += pow(ez->ar - 10.68f, 1.75f);
     } else if (ez->ar < 9.5f) {
       ar_bonus += 0.05f * (9.5f - ez->ar);
     }
@@ -2128,7 +2128,7 @@ int pp_std(ezpp_t ez) {
 
   /* flashlight */
   if (ez->mods & MODS_FL) {
-    float fl_bonus = 1.0f + 0.35f * al_min(1.0f, ez->nobjects / 200.0f);
+    float fl_bonus = 1.1f + 0.36f * al_min(1.0f, ez->nobjects / 200.0f);
     if (ez->nobjects > 200) {
       fl_bonus += 0.33f * al_min(1, (ez->nobjects - 200) / 300.0f);
     }
@@ -2172,13 +2172,13 @@ int pp_std(ezpp_t ez) {
   /* length bonus (not the same as speed/aim length bonus) */
   ez->acc_pp *= al_min(1.15f, (float)pow(ncircles / 1000.0f, 0.3f));
 
-  if (ez->mods & MODS_HD) ez->acc_pp *= 1.08f;
-  if (ez->mods & MODS_FL) ez->acc_pp *= 1.02f;
+  if (ez->mods & MODS_HD) ez->acc_pp *= 1.1f;
+  if (ez->mods & MODS_FL) ez->acc_pp *= 1.2f;
 
   /* total pp -------------------------------------------------------- */
   final_multiplier = 1.12f;
-  if (ez->mods & MODS_NF) final_multiplier *= 0.90f;
-  if (ez->mods & MODS_SO) final_multiplier *= 0.95f;
+  if (ez->mods & MODS_NF) final_multiplier *= 0.95f;
+  if (ez->mods & MODS_SO) final_multiplier *= 1.2f;
 
   if (ez->mods & MODS_RX) {
     /* aim & acc */
@@ -2191,8 +2191,8 @@ int pp_std(ezpp_t ez) {
   } else if (ez->mods & MODS_AP) {
     /* speed & acc */
     ez->pp = (float)pow(
-      pow(ez->speed_pp, 1.12f) +
-      pow(ez->acc_pp, 1.12f),
+      pow(ez->speed_pp, 1.14f) +
+      pow(ez->acc_pp, 1.14f),
       1.0f / 1.1f
     );
   } else {
